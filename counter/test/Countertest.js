@@ -6,7 +6,7 @@ describe("Counter", function () {
   before(async function () {
     const Counter = await ethers.getContractFactory("Counter");
     counter = await Counter.deploy();
-    await counter.deployed();
+    await counter.waitForDeployment();
   });
 
   it("Initial count should be 0", async function () {
