@@ -14,11 +14,11 @@ provider.send("eth_requestAccounts", []).then(() => {
 });
 
 async function setNote() {
-  const note = document.getElementById("note").ariaValueMax;
+  const note = document.getElementById("note").value;
   await contract.setNote(note);
 }
 
 async function getNote() {
   const note = await contract.getNote();
-  document.getElementById("note").innerText = note;
+  document.getElementById("result").innerText = note;
 }
