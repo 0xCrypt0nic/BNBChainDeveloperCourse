@@ -1,6 +1,6 @@
 import "./App.css";
 import React, { useState, useEffect } from "react";
-import { ethers } from "ethers";
+import { ethers, formatUnits } from "ethers";
 import ActionButton from "./components/ActionButton";
 import Player from "./components/Player";
 import Button from "react-bootstrap/Button";
@@ -76,29 +76,108 @@ const App = () => {
       gasLimit: 200000,
       value: ethers.utils.parseEther(`${betAmount}`),
     };
+
+    let choice = 3;
+    if (playerAction == "rock") {
+      choice = 1;
+    } else if (playerAction == "paper") {
+      choice = 2;
+    }
+
+    if (betAmount < 0.001 && playerAction == "") {
+      alert("Bet Amount is too small or player action has'nt been chosen");
+    } else {
+      try {
+        const transaction = await contract.play(choice, overrides);
+        setTxHash(transaction.hash);
+        console.log(`Transaction ${transaction.hash} complete !`);
+
+        await transaction.wait();
+
+        fetchContractChoice();
+      } catch (error) {
+        alert(`Failed transaction, please try again`);
+        console.error("Error: ", error);
+      }
+    }
   };
 
-  let choice = 3;
-  if (playerAction == "rock") {
-    choice = 1;
-  } else if (playerAction == "paper") {
-    choice = 2;
-  }
-
-  if (betAmount < 0.001 && playerAction == "") {
-    alert("Bet Amount is too small or player action has'nt been chosen");
-  }else{
-    try{
-      const transaction = await contract.play(choice, overrides);
-      setTxHash(transaction.hash);
-      console.log(`Transaction ${transaction.hash} complete !`);
-
-      await transaction.wait();
-
-      fetchContractChoice();
-    }catch(error){
-      alert(`Failed transaction, please try again`);
-      console.error("Error: ", error);
+  const fetchContractChoice = () => {
+    try {
+      const dataFromContract = contract.getCurrentChallengeStatus(account);
+      console.log(`
+        Whole data from contract: ${dataFromContract};
+        Status: ${dataFromContract[0]};
+        Player Choice: ${dataFromContract[3]};
+        Contract Choice: ${dataFromContract[4]};
+      `);
+    } catch (error) {
+      alert(
+        "An error occurred while fetching getCurrentChallengeStatus: ",
+        error
+      );
+      console.error(
+        "An error occurred while fetching getCurrentChallengeStatus",
+        error
+      );
     }
-  }
+  };
+
+  const displayCompChoice = (resultFromContract) => {
+    let compChoice = "scissors";
+    if (contractChoice == 1) {
+      compChoice = "rock";
+    } else if (contractChoice == 2) {
+      compChoice = "paper";
+    }
+
+    setComputerAction(compChoice);
+  };
+
+  const handleChangeOnBet = (event) => {
+    setBetAmount(event.target.value);
+  };
+
+  return (
+    <div className="center">
+      <h1>Rock Paper Scissors</h1>
+      <Button
+        className="button-connect"
+        variant="outline-primary"
+        onClick={connectWalletHandler}
+      >
+        {connButtonText}
+      </Button>{" "}
+      <div>
+        <div className="container">
+          <Player name="Player" action={playerAction} />
+          <Player name="Computer" action={computerAction} />
+        </div>
+        <div>
+          <ActionButton action="rock" onActionSelected={onActionSelected} />
+          <ActionButton action="paper" onActionSelected={onActionSelected} />
+          <ActionButton action="scissors" onActionSelected={onActionSelected} />
+        </div>
+        <div className="inputs">
+          <InputGroup className="mb-3">
+            <InputGroup.Text id="inputGroup-sizing-default">
+              Bet Amount
+            </InputGroup.Text>
+            <Form.Control
+              aria-label="Bet Amount"
+              aria-describedby="inputGroup-sizing-default"
+              onChange={handleChangeOnBet}
+              value={betAmount}
+            />
+          </InputGroup>
+        </div>
+        <Button variant="success" className="button-play" onClick={play}>
+          Play !
+        </Button>{" "}
+        <p>{`Latest transaction hash: ${txHash}`}</p>
+      </div>
+    </div>
+  );
 };
+
+export default App;
