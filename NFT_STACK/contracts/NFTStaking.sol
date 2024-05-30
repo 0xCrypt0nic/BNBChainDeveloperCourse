@@ -27,10 +27,10 @@ contract NFTStaking is Ownable {
     }
 
     function stake(uint256[] calldata _tokenIds) external {
-        Stacker storage staker = stakers[msg.sender];
+        Staker storage staker = stakers[msg.sender];
         require(_tokenIds.length > 0, "No tokens to stake");
         for (uint256 i = 0; i < _tokenIds.length; i++) {
-            uint256 tokensIds = _tokenIds[i];
+            uint256 tokenId = _tokenIds[i];
             require(
                 nftCollection.ownerOf(tokenId) == msg.sender,
                 "Can't stake tokens you don't own"
@@ -43,7 +43,7 @@ contract NFTStaking is Ownable {
 
     function withdraw(uint256[] calldata _tokenIds) external {
         Staker storage staker = stakers[msg.sender];
-        require(stacker.stackedTokenIds.length > 0, "No tokens staked");
+        require(staker.stackedTokenIds.length > 0, "No tokens staked");
         updateRewards(msg.sender);
 
         for (uint256 i = 0; i < _tokenIds.length; i++) {
