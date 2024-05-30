@@ -62,4 +62,59 @@ contract NFTStaking is Ownable {
             nftCollection.transferFrom(address(this), msg.sender, tokenId);
         }
     }
+
+    function claimRewards() external {
+        Staker storage staker = stakers[msg.sender];
+        uint256 rewards = calculateRewards(msg.sender) +
+            staker.unclaimedRewards;
+        require(rewards > 0, "No rewards to claim");
+        staker.lastUpdatedTime = block.timestamp;
+        staker.unclaimedRewards = 0;
+        rewardsToken.transfer(msg.sender, rewards);
+    }
+
+    function setRewardsPerHour(uint256 _newValue) external onlyOwner {
+        rewardsPerHour = _newValue;
+    }
+
+    function isStaked(
+        address _user,
+        uint256 _tokenId
+    ) public view returns (bool) {
+        Staker storage staker = stakers[_user];
+        for (uint256 i = 0; i < staker.stackedTokenIds.length; i++) {
+            if (staker.stackedTokenIds[i] == _tokenId) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    function getTokenIndex(
+        address _user,
+        uint256 _tokenId
+    ) public view returns (uint256) {
+        Staker storage staker = stakers[_user];
+        for (uint256 i = 0; i < staker.stackedTokenIds.length; i++) {
+            if (staker.stackedTokenIds[i] == _tokenId) {
+                return i;
+            }
+        }
+        revert("Token not found");
+    }
+
+    function calculateRewards(address _staker) internal view returns (uint256) {
+        Staker storage staker = stakers[_staker];
+        uint256 timePassed = block.timestamp - staker.lastUpdatedTime;
+        return
+            (timePassed * rewardsPerHour * staker.stackedTokenIds.length) /
+            3600;
+    }
+
+    function updateRewards(address _staker) internal {
+        Staker storage staker = stakers[_staker];
+        uint256 rewardsEarned = calculateRewards(_staker);
+        staker.unclaimedRewards += rewardsEarned;
+        staker.lastUpdatedTime = block.timestamp;
+    }
 }
